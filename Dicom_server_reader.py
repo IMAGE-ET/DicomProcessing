@@ -66,3 +66,30 @@ for ii, path in enumerate( paths ):
     # interact(DICOM_series_dropdown_callback, series_to_load=series_IDs, series_dictionary=fixed(series_file_names)); 
 # else:
     # print('Data directory does not contain any DICOM series.')
+    
+    
+    # def writeSeries(imagein,outDir):
+    # writer = sitk.ImageSeriesWriter()
+    # filenames = [ outDir+'MR_{0:04}.dcm'.format(i) for i in
+# range(imagein.GetSize()[2])]
+    # writer.SetFileNames(filenames)
+    # writer.Execute(imagein)
+    
+    
+    
+ ##### If using pydicom
+
+import dicom
+
+plan = dicom.read_file("rtplan.dcm")
+id=plan.PatientName
+print(id)
+plan.dir("serie")
+tag= plan.PatientSetupSequence[0]
+print(tag)
+plan.save_as("newname.dcm")
+            
+    
+    
+    
+    
