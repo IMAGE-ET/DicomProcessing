@@ -6,6 +6,81 @@ import skimage.io as io
 import sys,os,fnmatch,shutil
 import collections,random
 
+csvFILE='./coords_lm.csv'
+
+#################### 3D landmark parsing method ####################
+def parseLandmarks(filename):
+    file=open(filename)
+    count=0
+    landmarkDict= collections.defaultdict(dict)
+    landmarkList= []
+    for line in file:
+        count=count+1
+        line=line.replace('"','')
+        tokens=line.strip("\n").split(",")
+        name=tokens[0].strip("\t ^")
+        if count==1:
+            #Parse Landmark names
+            for i in range(7,64,3):
+                tk=tokens[i].split(".")
+                landmark=tk[0]
+                coord=tk[1]
+                if(len(tk)==3):
+                    ori=tk[2]
+                    landmark=landmark+'.'+ori
+                else:
+                    ori=''
+                    landmark=landmark
+                landmarkList.append(landmark)
+        else:
+            listindex=0
+            for i in range(7,64,3):
+                lx=tokens[i]
+                ly=tokens[i+1]
+                lz=tokens[i+2]
+                #if(lx!='' and ly!='' and lz!=''):
+                #    print(lx,ly,lz)
+                #use the previous if in case we dont want to save blank landmarks in the dictionary
+                try:
+                    landmarkDict[name][landmarkList[listindex]]=[lx,ly,lz]
+                except:
+                    print(name,'ERROR adding name')
+                listindex=listindex+1
+    print('Number of 3D Landmarks',len(landmarkList))
+    print('Number of Subjects',len(landmarkDict))
+    return landmarkDict,landmarkList
+    file.close()
+    
+####################  Path reading methods for DCM images:  ####################
+def searchPath(input_dir):
+    matches = []
+    dirs = []
+    for root, dirnames, filenames in os.walk(input_dir):
+        for filename in fnmatch.filter(filenames, '*.dcm'):
+            matches.append(os.path.join(root, filename));
+            if root not in dirs:
+                dirs.append(root)
+    return (matches, dirs)
+
+def readDCMdir(dirs):
+    isr = sitk.ImageSeriesReader()
+    seriessets = []
+    for d in dirs:
+        series = isr.GetGDCMSeriesIDs(d)
+        for s in series:
+            files = isr.GetGDCMSeriesFileNames(d, s)
+            print s, d, len(files)
+            seriessets.append([s, d, files])
+    return seriessets
+    
+    
+################### Parse CSV file with 3D landmarks ####################
+land3D,landmarkList=parseLandmarks(csvFILE)
+print('Reading 3D landmark coordinates',csvFILE,'...')
+
+
+
+    
 # Collect all DICOM series
 reader = sitk.ImageSeriesReader()
 for cur_dir, subdirs, files in os.walk( base_directory ):
@@ -79,15 +154,20 @@ for ii, path in enumerate( paths ):
     
  ##### If using pydicom
 
-import dicom
+# import dicom
 
-plan = dicom.read_file("rtplan.dcm")
-id=plan.PatientName
-print(id)
-plan.dir("serie")
-tag= plan.PatientSetupSequence[0]
-print(tag)
-plan.save_as("newname.dcm")
+# dcmf = dicom.read_file("rtdcmf.dcm")
+# print(dcmf)
+# dcmf.PatientName
+# name=dcmf.data_element("PatientsName")
+# print(name)
+# dcmf.PatientID
+# id==dcmf.data_element("PatientsID")
+# dcmf.SeriesNumber
+# dcmf.dir("pat")
+# tag= dcmf.PatientSetupSequence[0]
+# print(tag)
+# dcmf.save_as("newname.dcm")
             
     
     
