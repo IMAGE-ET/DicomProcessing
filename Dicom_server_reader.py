@@ -3,12 +3,14 @@ import matplotlib.pyplot as plt
 import nibabel as nib
 import numpy as np
 import skimage.io as io
-import sys,os,fnmatch,shutil
+import glob,sys,os,fnmatch,shutil
 import collections,random
 from ipywidgets import interact, interactive, fixed, interact_manual
 import dicom
 csvFILE='./deepmedic/examples/CTdataset/coords_lm.csv'
-serverPATH='./deepmedic/examples/CTdataset/Dataset/'
+#serverPATH='./deepmedic/examples/CTdataset/Dataset/'
+serverPATH='/media/ebermejo/My Book/archive/2008'
+verbose=True
 #################### 3D landmark parsing method ####################
 def parseLandmarks(filename):
     file=open(filename)
@@ -61,14 +63,15 @@ def searchPath(reader,input_dir):
     tags=[]
     nbdl=1
 
-
     for cur_dir, subdirs, files in os.walk( input_dir ):
-        series_found = reader.GetGDCMSeriesIDs( cur_dir )
-        if series_found:
-            series.append( series_found )
-            paths.append( cur_dir )
-            tag = "_".join( cur_dir.split( os.path.sep )[ nbdl-1 : ] ).replace(" ", "_")
-            tags.append( tag )
+        if len(subdirs)==0:
+            print('Read',cur_dir,'...')
+            series_found = reader.GetGDCMSeriesIDs( cur_dir )
+            if series_found:
+                series.append( series_found )
+                paths.append( cur_dir )
+                tag = "_".join( cur_dir.split( os.path.sep )[ nbdl-1 : ] ).replace(" ", "_")
+                tags.append( tag )
     return series,paths,tags
 
 ################### Parse CSV file with 3D landmarks ####################
@@ -77,7 +80,14 @@ print('Reading 3D landmark coordinates',csvFILE,'...')
 
 reader = sitk.ImageSeriesReader()
 series,paths,tags=searchPath(reader,serverPATH)
-
+sfile=open('./last_series.txt','w')
+pfile=open('./last_paths.txt','w')
+for ii, path in enumerate( paths ):
+    pfile.write(str(ii)+';'+str(path)+'\n')
+    for jj, serie in enumerate(series[ii]):
+        sfile.write(str(ii)+';'+str(jj)+';'+str(serie)+'\n')
+pfile.close()
+sfile.close()
 #Process series: segment face, extract contour, compute mesh
 for ii, path in enumerate( paths ):
     for jj, serie in enumerate(series[ii]):
@@ -86,24 +96,38 @@ for ii, path in enumerate( paths ):
             dicom_names = reader.GetGDCMSeriesFileNames( path, serie)
         except:
             continue
-        dcmf = dicom.read_file(dicom_names[0])
-        serie=dcmf.data_element("SeriesInstanceUID").value
-        seriename=dcmf.data_element("SeriesDescription").value
-        seriename=seriename.replace(" ","").replace(".","")
-        seriesnumber=dcmf.data_element("SeriesNumber").value
-        pid=dcmf.data_element("PatientID").value
+        for zz in range(0,len(dicom_names)):
+            exitFlag=False
+            dcmf = dicom.read_file(dicom_names[zz])
+            serie=dcmf.data_element("SeriesInstanceUID").value
+            try:
+                seriename=dcmf.data_element("SeriesDescription").value
+                seriename=seriename.replace(" ","").replace(".","")
+            except:
+                seriename=dcmf.data_element("StudyDescription").value
+                seriename=seriename.replace(" ","_").replace(".","")
+            seriesnumber=dcmf.data_element("SeriesNumber").value
+            patientdir=dcmf.data_element("PatientID").value
+            seriedir=str(seriename)+"_"+str(seriesnumber)
+            sn=str(seriesnumber)
+            imagedir='IM-'+sn.zfill(4)+'-'+'{:04d}'.format(zz+1)+'.dcm'
 
-        patientdir=pid
-        seriedir=str(seriename)+"_"+str(seriesnumber)
-
-        if(land3D[patientdir]):
-            print(serie,patientdir,seriedir)
-            #saving image in a predefined path style
-            # newdir="./"+str(patientdir)+"/"+seriedir+"/"
-            # newfiledir=newdir+"newname.dcm"
-            # if not os.path.exists(newfiledir):
-            #     os.makedirs(newdir)
-            #     dcmf.save_as(newfiledir)
-            # else:
-            #     print("FILE exists already...check the script","...")
-            #     programPause = raw_input("Press the <ENTER> key to continue...")
+            if(land3D[patientdir]):
+                print(serie,patientdir,seriedir)
+                #saving image in a predefined path style
+                newdir="./Dataset/"+str(patientdir)+"/"+seriedir+"/"
+                newfiledir=newdir+imagedir
+                if not os.path.exists(newfiledir):
+                    if not os.path.exists(newdir):
+                        os.makedirs(newdir)
+                    dcmf.save_as(newfiledir)
+                    print("Saving",newfiledir,"...")
+                else:
+                    print("FILE exists already...check the script","...")
+            else:
+                print("Patient not recognized",patientdir,seriedir)
+                exitFlag=True
+                break
+                programPause = raw_input("Press the <ENTER> key to continue...")
+        if(exitFlag):
+            break
