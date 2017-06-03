@@ -9,11 +9,11 @@ Step 1 - Analize the server database path structure, compare the patients Id / n
 Step 2 - Semiautomatic refinement of the database for removing undesired series. Most of the series are automatically discarded, but visual confirmation for a proper landmark location is required.
 
 Step 3 - Automatic preprocessing of the database:<br>
-        -Image resampling   - normalize image spacing to (1.0,1.0,1.0) mm per volex<br>
-        -ROI extraction     - creates a mask where blank space- air is not considered <br>
-        -GT extraction      - creates a labelled mask where a 3x3x3voxels cube encloses a particular craniofacial landmark                                 (19 different classes)<br>
-        -Iage normalization - normalize intensity distribution for every image<br>
-        -NiFTi extraction   - saves the dicom images in NiFTi format using nibabel<br>
-        -DeepMedic configuration files creation
+    -Image resampling   - normalize image spacing to (1.0,1.0,1.0) mm per volex<br>
+    -ROI extraction     - creates a mask where blank space- air is not considered <br>
+    -GT extraction      - creates a labelled mask where a 3x3x3voxels cube encloses a particular craniofacial landmark                                 (19 different classes)<br> 
+    -Image normalization - normalize intensity distribution for every image<br>
+    -NiFTi extraction   - saves the dicom images in NiFTi format using nibabel<br>
+    -DeepMedic configuration files creation
         
 Step 4 - Visualization and error distances calculation for the predicted landmarks in the test dataset
